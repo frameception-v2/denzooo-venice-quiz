@@ -22,17 +22,54 @@ import { createStore } from "mipd";
 import { Label } from "~/components/ui/label";
 import { PROJECT_TITLE } from "~/lib/constants";
 
-function ExampleCard() {
+function QuizCard({ currentQuestion, answers, onAnswer }: { 
+  currentQuestion: number, 
+  answers: number[], 
+  onAnswer: (index: number) => void 
+}) {
+  const question = QUIZ_QUESTIONS[currentQuestion];
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to the Frame Template</CardTitle>
+        <CardTitle>Question {currentQuestion + 1}</CardTitle>
+        <CardDescription>{question.question}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        {question.options.map((option, index) => (
+          <button
+            key={index}
+            onClick={() => onAnswer(index)}
+            className={`p-2 text-left rounded ${
+              answers[currentQuestion] === index 
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ResultCard({ score }: { score: number }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Quiz Complete!</CardTitle>
         <CardDescription>
-          This is an example card that you can customize or remove
+          You scored {score} out of {QUIZ_QUESTIONS.length}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Label>Place content in a Card here.</Label>
+        <button 
+          onClick={() => window.location.reload()}
+          className="w-full p-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+        >
+          Try Again
+        </button>
       </CardContent>
     </Card>
   );
@@ -127,6 +164,21 @@ export default function Frame() {
     return <div>Loading...</div>;
   }
 
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const score = answers.reduce((acc, answer, index) => 
+    acc + (answer === QUIZ_QUESTIONS[index]?.correct ? 1 : 0), 0);
+
+  const handleAnswer = (answerIndex: number) => {
+    const newAnswers = [...answers];
+    newAnswers[currentQuestion] = answerIndex;
+    setAnswers(newAnswers);
+    
+    if (currentQuestion < QUIZ_QUESTIONS.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  };
+
   return (
     <div
       style={{
@@ -138,9 +190,34 @@ export default function Frame() {
     >
       <div className="w-[300px] mx-auto py-2 px-2">
         <h1 className="text-2xl font-bold text-center mb-4 text-gray-700 dark:text-gray-300">
-          {PROJECT_TITLE}
+          {QUIZ_TITLE}
         </h1>
-        <ExampleCard />
+
+        {currentQuestion < QUIZ_QUESTIONS.length ? (
+          <>
+            <QuizCard 
+              currentQuestion={currentQuestion}
+              answers={answers}
+              onAnswer={handleAnswer}
+            />
+            <div className="flex justify-between mt-4">
+              {currentQuestion > 0 && (
+                <button
+                  onClick={() => setCurrentQuestion(currentQuestion - 1)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ← Previous
+                </button>
+              )}
+              <span className="flex-grow"></span>
+              <span className="text-gray-500">
+                {currentQuestion + 1} / {QUIZ_QUESTIONS.length}
+              </span>
+            </div>
+          </>
+        ) : (
+          <ResultCard score={score} />
+        )}
       </div>
     </div>
   );
